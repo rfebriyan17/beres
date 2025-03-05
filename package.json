@@ -1,0 +1,15 @@
+{
+  "name": "efek",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "framer-motion": "^10.0.0",
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-icons": "^5.5.0"
+  }
+}
