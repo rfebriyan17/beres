@@ -7,11 +7,27 @@ export default function Contact() {
   const [comments, setComments] = useState([]);
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false); // State loading untuk feedback
 
+  // Mengambil komentar dari API ketika komponen dimuat
   useEffect(() => {
-    fetch("/api/comments")
-      .then((res) => res.json())
-      .then((data) => setComments(data));
+    const fetchComments = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/comments");
+        if (res.ok) {
+          const data = await res.json();
+          setComments(data);
+        } else {
+          throw new Error("Failed to fetch comments");
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchComments();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -20,28 +36,44 @@ export default function Contact() {
 
     const newComment = { name, message, timestamp: Date.now() };
 
-    const res = await fetch("/api/comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newComment),
-    });
+    try {
+      setLoading(true);
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newComment),
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      setComments([...comments, data]);
-      setName("");
-      setMessage("");
+      if (res.ok) {
+        const data = await res.json();
+        setComments([...comments, data]);
+        setName("");
+        setMessage("");
+      } else {
+        throw new Error("Failed to submit comment");
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    const res = await fetch(`/api/comments?id=${id}`, { method: "DELETE" });
+    try {
+      const res = await fetch(`/api/comments?id=${id}`, { method: "DELETE" });
 
-    if (res.ok) {
-      setComments(comments.filter((comment) => comment.id !== id));
+      if (res.ok) {
+        setComments(comments.filter((comment) => comment.id !== id));
+      } else {
+        throw new Error("Failed to delete comment");
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
+  // Penyesuaian warna sesuai tema (mode terang / gelap)
   const isDarkMode = theme === "dark";
   const backgroundColor = isDarkMode ? "#0f172a" : "#f9f9f9";
   const textColor = isDarkMode ? "#f1f5f9" : "#1e293b";
@@ -129,8 +161,9 @@ export default function Contact() {
             cursor: "pointer",
             fontSize: "16px",
           }}
+          disabled={loading}
         >
-          Submit
+          {loading ? "Submitting..." : "Submit"}
         </button>
       </motion.form>
 
