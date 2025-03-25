@@ -1,9 +1,10 @@
 "use client";
+
 import { motion } from "framer-motion";
 import { useContext } from "react";
 import { ThemeContext } from "@/context/ThemeContext"; // Pastikan path absolut
-import { FaReact, FaNodeJs, FaCss3Alt, FaJs, FaPhp, FaGitAlt } from "react-icons/fa";
-import { SiTypescript, SiNextdotjs, SiRedux, SiMongodb, SiExpress, SiFramer, SiTailwindcss, SiMysql, SiChartdotjs, SiGamepad } from "react-icons/si";
+import { FaReact, FaNodeJs, FaCss3Alt, FaJs, FaPhp, FaGitAlt, FaGamepad } from "react-icons/fa"; // Ganti SiGamepad dengan FaGamepad
+import { SiTypescript, SiNextdotjs, SiRedux, SiMongodb, SiExpress, SiFramer, SiTailwindcss, SiMysql, SiChartdotjs } from "react-icons/si";
 
 const skills = [
   { name: "TypeScript", icon: SiTypescript },
@@ -21,7 +22,7 @@ const skills = [
   { name: "HTML & CSS", icon: FaCss3Alt },
   { name: "JavaScript", icon: FaJs },
   { name: "Chart.js", icon: SiChartdotjs },
-  { name: "Gamification", icon: SiGamepad },
+  { name: "Gamification", icon: FaGamepad }, // Ganti SiGamepad dengan FaGamepad
 ];
 
 export default function Skills() {
