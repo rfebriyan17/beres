@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { v4 as uuidv4 } from "uuid"; // Menggunakan UUID untuk ID yang unik
 
 const filePath = path.join(process.cwd(), "db.json");
 
@@ -8,9 +9,10 @@ async function readComments() {
   try {
     const data = await fs.readFile(filePath, "utf-8");
     const jsonData = JSON.parse(data);
-    return jsonData.comments || []; // Pastikan mengembalikan array
+    return jsonData.comments || []; // Mengembalikan array komentar
   } catch (error) {
-    return []; // Jika error, return array kosong
+    console.error("Error reading comments:", error);
+    return []; // Mengembalikan array kosong jika terjadi error
   }
 }
 
@@ -18,10 +20,11 @@ async function readComments() {
 async function writeComments(comments) {
   try {
     const existingData = JSON.parse(await fs.readFile(filePath, "utf-8"));
-    existingData.comments = comments; // Hanya update bagian komentar
+    existingData.comments = comments; // Update bagian komentar
     await fs.writeFile(filePath, JSON.stringify(existingData, null, 2));
   } catch (error) {
-    await fs.writeFile(filePath, JSON.stringify({ comments }, null, 2)); // Buat baru jika tidak ada
+    // Jika file tidak ada, buat file baru dengan data komentar
+    await fs.writeFile(filePath, JSON.stringify({ comments }, null, 2));
   }
 }
 
@@ -31,6 +34,7 @@ export async function GET() {
     const comments = await readComments();
     return new Response(JSON.stringify(comments), { status: 200 });
   } catch (error) {
+    console.error("Failed to get comments:", error);
     return new Response(JSON.stringify({ error: "Failed to read data" }), { status: 500 });
   }
 }
@@ -39,14 +43,19 @@ export async function GET() {
 export async function POST(req) {
   try {
     const { name, message } = await req.json();
+
+    // Validasi input
     if (!name || !message) {
-      return new Response(JSON.stringify({ error: "Name and message are required" }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "Name and message are required" }),
+        { status: 400 }
+      );
     }
 
     const comments = await readComments();
 
     const newComment = {
-      id: Date.now(),
+      id: uuidv4(),  // Menggunakan UUID untuk ID unik
       name,
       message,
       timestamp: new Date().toISOString(),
@@ -57,7 +66,11 @@ export async function POST(req) {
 
     return new Response(JSON.stringify(newComment), { status: 201 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Failed to save data" }), { status: 500 });
+    console.error("Error saving comment:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to save data" }),
+      { status: 500 }
+    );
   }
 }
 
@@ -65,23 +78,38 @@ export async function POST(req) {
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = Number(searchParams.get("id"));
+    const id = searchParams.get("id");
 
-    if (!id || isNaN(id)) {
-      return new Response(JSON.stringify({ error: "Invalid ID" }), { status: 400 });
+    // Validasi ID
+    if (!id || typeof id !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Invalid ID" }),
+        { status: 400 }
+      );
     }
 
     let comments = await readComments();
     const updatedComments = comments.filter((comment) => comment.id !== id);
 
+    // Cek apakah komentar ditemukan dan dihapus
     if (updatedComments.length === comments.length) {
-      return new Response(JSON.stringify({ error: "Comment not found" }), { status: 404 });
+      return new Response(
+        JSON.stringify({ error: "Comment not found" }),
+        { status: 404 }
+      );
     }
 
     await writeComments(updatedComments);
 
-    return new Response(JSON.stringify({ message: "Deleted successfully" }), { status: 200 });
+    return new Response(
+      JSON.stringify({ message: "Deleted successfully" }),
+      { status: 200 }
+    );
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Failed to delete comment" }), { status: 500 });
+    console.error("Error deleting comment:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to delete comment" }),
+      { status: 500 }
+    );
   }
 }
