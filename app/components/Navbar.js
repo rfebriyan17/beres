@@ -4,24 +4,29 @@ import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [activeSection, setActiveSection] = useState("home");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
       requestAnimationFrame(() => {
-        const sections = ["home", "about", "projects", "skills", "experience", "contact"];
+        const sections = ["home", "about", "projects", "skills", "experience", "contact", "rating", "chatbot"];
         let currentSection = "home";
 
         sections.forEach((section) => {
           const sectionElement = document.getElementById(section);
           if (sectionElement) {
             const rect = sectionElement.getBoundingClientRect();
-            if (rect.top <= window.innerHeight * 0.25 && rect.bottom >= window.innerHeight * 0.25) {
+            if (rect.top <= window.innerHeight * 0.3 && rect.bottom >= window.innerHeight * 0.3) {
               currentSection = section;
             }
           }
         });
 
-        setActiveSection(currentSection);
+        if (window.scrollY < 50) {
+          setTimeout(() => setActiveSection("home"), 100);
+        } else {
+          setActiveSection(currentSection);
+        }
       });
     };
 
@@ -31,27 +36,25 @@ export default function Navbar() {
 
   const scrollToSection = (section) => {
     const sectionElement = document.getElementById(section);
-    const navbar = document.querySelector(".navbar");
-    const navbarHeight = navbar ? navbar.offsetHeight : 0;
-
-    if (section === "home") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (sectionElement) {
-      const sectionTop = sectionElement.offsetTop - navbarHeight - 10;
-      window.scrollTo({
-        top: Math.max(0, sectionTop),
-        behavior: "smooth",
-      });
+    if (sectionElement) {
+      sectionElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => {
+        setActiveSection(section);
+        setMenuOpen(false); // Menutup menu setelah klik
+      }, 300);
     }
-
-    setActiveSection(section);
   };
 
   return (
     <>
       <nav className="navbar">
-        <ul>
-          {["home", "about", "projects", "skills", "experience", "contact"].map((section) => (
+        {/* Toggle menu (Hanya muncul di mode mobile) */}
+        <div className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+          ☰
+        </div>
+
+        <ul className={`menu ${menuOpen ? "open" : ""}`}>
+          {["home", "about", "projects", "skills", "experience", "contact", "rating", "chatbot"].map((section) => (
             <li key={section}>
               <button
                 className={activeSection === section ? "active" : ""}
@@ -65,33 +68,21 @@ export default function Navbar() {
       </nav>
 
       <style jsx>{`
-        html, body {
-          margin: 0;
-          padding: 0;
-          width: 100%;
-          overflow-x: hidden;
-          scroll-behavior: smooth;
-        }
-
         .navbar {
           position: fixed;
           top: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: max-content;
-          max-width: 100vw;
+          right: 20px;
           background: rgba(0, 0, 0, 0.9);
           padding: 12px 20px;
           backdrop-filter: blur(10px);
           z-index: 1000;
-          display: flex;
-          justify-content: center;
-          align-items: center;
           border-radius: 30px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+          display: flex;
+          align-items: center;
         }
 
-        .navbar ul {
+        .menu {
           list-style: none;
           display: flex;
           gap: 15px;
@@ -99,42 +90,76 @@ export default function Navbar() {
           padding: 0;
         }
 
-        .navbar button {
+        .menu button {
           background: none;
           border: none;
           color: white;
           font-weight: bold;
           font-size: 14px;
-          padding: 8px 15px;
-          border-radius: 15px;
+          padding: 12px 18px;
+          border-radius: 20px;
           cursor: pointer;
-          transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+          transition: background 0.3s, color 0.3s;
         }
 
-        .navbar button.active {
-          background: rgba(255, 255, 255, 0.3);
+        .menu button.active {
+          background: rgba(255, 255, 255, 0.4);
           color: white;
-          padding: 8px 15px;
-          border-radius: 15px;
         }
 
-        .navbar button:hover {
-          background: rgba(255, 255, 255, 0.2);
+        .menu button:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
 
+        /* Mobile Mode */
         @media (max-width: 768px) {
           .navbar {
-            width: 90%;
-            padding: 10px;
+            right: 10px;
           }
 
-          .navbar ul {
-            flex-wrap: wrap;
+          .menu-toggle {
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            background: none;
+            border: none;
+            z-index: 1100; /* Menjaga agar tetap di atas */
+            position: relative;
           }
 
-          .navbar button {
-            font-size: 12px;
-            padding: 6px 10px;
+          .menu {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 220px;
+            background: rgba(0, 0, 0, 0.95);
+            border-radius: 10px;
+            padding: 10px 0;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1001; /* Pastikan lebih tinggi dari navbar */
+          }
+
+          .menu.open {
+            display: flex;
+          }
+
+          .menu li {
+            text-align: center;
+          }
+
+          .menu button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+          }
+        }
+
+        /* Sembunyikan tombol hamburger di mode desktop */
+        @media (min-width: 769px) {
+          .menu-toggle {
+            display: none;
           }
         }
       `}</style>

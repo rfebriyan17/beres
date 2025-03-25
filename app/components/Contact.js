@@ -1,168 +1,184 @@
-"use client";
-
-import { motion, useAnimation } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useContext } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ThemeContext } from "../context/ThemeContext";
 
 export default function Contact() {
-  const controls = useAnimation();
-  const sectionRef = useRef(null);
+  const { theme } = useContext(ThemeContext);
+  const [comments, setComments] = useState([]);
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
+    fetch("/api/comments")
+      .then((res) => res.json())
+      .then((data) => setComments(data));
+  }, []);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          controls.start({
-            opacity: 1,
-            y: 0,
-            transition: { duration: 0.6, ease: "easeOut" },
-          });
-        } else {
-          controls.start({
-            opacity: 0,
-            y: 30,
-          });
-        }
-      },
-      { threshold: 0.5 }
-    );
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim() || !message.trim()) return;
 
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, [controls]);
+    const newComment = { name, message, timestamp: Date.now() };
+
+    const res = await fetch("/api/comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newComment),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setComments([...comments, data]);
+      setName("");
+      setMessage("");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const res = await fetch(`/api/comments?id=${id}`, { method: "DELETE" });
+
+    if (res.ok) {
+      setComments(comments.filter((comment) => comment.id !== id));
+    }
+  };
+
+  const isDarkMode = theme === "dark";
+  const backgroundColor = isDarkMode ? "#0f172a" : "#f9f9f9";
+  const textColor = isDarkMode ? "#f1f5f9" : "#1e293b";
+  const inputBg = isDarkMode ? "rgba(255, 255, 255, 0.1)" : "white";
+  const commentBg = isDarkMode ? "#1e293b" : "#e2e8f0";
+  const borderColor = isDarkMode ? "#334155" : "#cbd5e1";
 
   return (
     <motion.section
-      ref={sectionRef}
       id="contact"
-      style={styles.contactSection}
       initial={{ opacity: 0, y: 30 }}
-      animate={controls}
+      animate={{ opacity: 1, y: 0, transition: { duration: 0.6 } }}
+      style={{
+        textAlign: "center",
+        padding: "120px 20px",
+        width: "100vw",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        background: backgroundColor,
+        color: textColor,
+        transition: "all 0.3s ease-in-out",
+      }}
     >
-      <div style={styles.container}>
-        <h2 style={styles.heading}>📩 Get In Touch</h2>
-        <p style={styles.subText}>
-          Feel free to reach out via email at{" "}
-          <a href="mailto:rfebriyan99@gmail.com" style={styles.email}>
-            rfebriyan99@gmail.com
-          </a>{" "}
-          or send a message below! 💬
-        </p>
+      <h2 style={{ fontSize: "2.2rem", fontWeight: "bold", marginBottom: "20px" }}>📩 Leave a Comment</h2>
 
-        <form style={styles.form}>
-          <motion.input
-            type="email"
-            placeholder="Your Email"
-            style={styles.input}
-            whileFocus={{ scale: 1.05 }}
-          />
-          <motion.textarea
-            placeholder="Your Message"
-            style={styles.textarea}
-            whileFocus={{ scale: 1.05 }}
-          />
-          <motion.button
-            type="submit"
-            style={styles.submitButton}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Send Message 🚀
-          </motion.button>
-        </form>
+      <motion.form
+        onSubmit={handleSubmit}
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          maxWidth: "450px",
+          width: "100%",
+          padding: "15px",
+          background: commentBg,
+          borderRadius: "10px",
+          boxShadow: isDarkMode ? "0px 0px 10px rgba(255,255,255,0.1)" : "0px 0px 10px rgba(0,0,0,0.1)",
+          border: `1px solid ${borderColor}`,
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Your Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          style={{
+            padding: "12px",
+            borderRadius: "6px",
+            background: inputBg,
+            color: textColor,
+            border: `1px solid ${borderColor}`,
+            fontSize: "16px",
+          }}
+        />
+        <textarea
+          placeholder="Your Message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          required
+          rows="4"
+          style={{
+            padding: "12px",
+            borderRadius: "6px",
+            background: inputBg,
+            color: textColor,
+            border: `1px solid ${borderColor}`,
+            fontSize: "16px",
+          }}
+        />
+        <button
+          type="submit"
+          style={{
+            padding: "12px",
+            borderRadius: "6px",
+            background: "#ffcc00",
+            fontWeight: "bold",
+            color: "#1e293b",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
+        >
+          Submit
+        </button>
+      </motion.form>
+
+      <div style={{ maxWidth: "600px", width: "100%", marginTop: "20px" }}>
+        <h3 style={{ marginBottom: "10px" }}>📝 Comments</h3>
+        <AnimatePresence>
+          {comments.map((comment) => (
+            <motion.div
+              key={comment.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+              style={{
+                background: commentBg,
+                padding: "12px",
+                borderRadius: "8px",
+                marginBottom: "10px",
+                color: textColor,
+                border: `1px solid ${borderColor}`,
+                boxShadow: isDarkMode ? "0px 0px 8px rgba(255,255,255,0.1)" : "0px 0px 8px rgba(0,0,0,0.1)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <strong>{comment.name}</strong>
+                <p style={{ margin: "5px 0" }}>{comment.message}</p>
+                <small>{new Date(comment.timestamp).toLocaleString()}</small>
+              </div>
+              <button
+                onClick={() => handleDelete(comment.id)}
+                style={{
+                  background: "red",
+                  color: "white",
+                  border: "none",
+                  padding: "5px 10px",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                }}
+              >
+                🗑
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </motion.section>
   );
 }
-
-// 🎨 **CSS (Sama dengan Skills Section)**
-const styles = {
-  contactSection: {
-    width: "100vw",
-    height: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    textAlign: "center",
-    background: "linear-gradient(135deg, #0f172a, #1e293b)",
-    color: "white",
-  },
-  container: {
-    width: "100%",
-    maxWidth: "600px",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0px 5px 20px rgba(255, 255, 255, 0.1)",
-    background: "rgba(255, 255, 255, 0.05)",
-  },
-  heading: {
-    fontSize: "2.5rem",
-    fontWeight: "bold",
-    marginBottom: "10px",
-    letterSpacing: "2px",
-    textTransform: "uppercase",
-  },
-  subText: {
-    fontSize: "1rem",
-    color: "#bbb",
-    marginBottom: "20px",
-  },
-  email: {
-    color: "#ffcc00",
-    textDecoration: "none",
-    fontWeight: "bold",
-    transition: "color 0.3s ease",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "15px",
-  },
-  input: {
-    width: "80%",
-    maxWidth: "400px",
-    padding: "12px",
-    fontSize: "1rem",
-    borderRadius: "8px",
-    border: "2px solid transparent",
-    outline: "none",
-    background: "rgba(255, 255, 255, 0.1)",
-    color: "white",
-    transition: "all 0.3s ease",
-  },
-  textarea: {
-    width: "80%",
-    maxWidth: "400px",
-    height: "100px",
-    padding: "12px",
-    fontSize: "1rem",
-    borderRadius: "8px",
-    border: "2px solid transparent",
-    outline: "none",
-    background: "rgba(255, 255, 255, 0.1)",
-    color: "white",
-    resize: "none",
-    transition: "all 0.3s ease",
-  },
-  submitButton: {
-    background: "linear-gradient(45deg, #ffcc00, #ffdd44)",
-    color: "black",
-    fontSize: "1rem",
-    fontWeight: "bold",
-    padding: "12px 22px",
-    borderRadius: "10px",
-    border: "none",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    boxShadow: "0px 4px 10px rgba(255, 204, 0, 0.4)",
-  },
-};
-
-// 💻 **Responsiveness**
-styles["@media screen and (max-width: 768px)"] = {
-  input: { width: "90%" },
-  textarea: { width: "90%" },
-};

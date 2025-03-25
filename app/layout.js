@@ -1,8 +1,14 @@
-export default function Layout({ children }) {
+"use client";
+
+import { ThemeProvider } from "@/context/ThemeContext";
+
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
